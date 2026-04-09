@@ -1,5 +1,0 @@
-/root/autodl-tmp/user/hpc/one-day-one-cuda-operator/build/CMakeFiles/edit_cache.dir
-/root/autodl-tmp/user/hpc/one-day-one-cuda-operator/build/CMakeFiles/rebuild_cache.dir
-/root/autodl-tmp/user/hpc/one-day-one-cuda-operator/build/operators/01_vector_add/CMakeFiles/01_vector_add.dir
-/root/autodl-tmp/user/hpc/one-day-one-cuda-operator/build/operators/01_vector_add/CMakeFiles/edit_cache.dir
-/root/autodl-tmp/user/hpc/one-day-one-cuda-operator/build/operators/01_vector_add/CMakeFiles/rebuild_cache.dir
