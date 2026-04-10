@@ -1,6 +1,67 @@
-build/
+# ==========================================
+# C++ & CUDA 编译产物
+# ==========================================
 *.o
+*.obj
 *.out
-test
-*.d
-*.cu_o
+*.exe
+*.dll
+*.dylib
+*.a
+*.lib
+
+# ==========================================
+# Python & PyTorch Extension 编译与缓存
+# ==========================================
+# 动态链接库 (也就是你 setup.py 编译出来的东西)
+*.so
+*.pyd
+
+# Python 字节码缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python 打包与发行目录
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# 虚拟环境 (如果你用了的话)
+venv/
+env/
+.env/
+
+# ==========================================
+# CMake 构建目录 (如果你后续又切回纯 CMake)
+# ==========================================
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+install/
+compile_commands.json
+
+# ==========================================
+# Nsight Compute & Profiling (性能分析文件)
+# ==========================================
+*.ncu-rep
+*.nsys-rep
+*.sqlite
+*.log
+
+# ==========================================
+# 编辑器与操作系统专属文件
+# ==========================================
+# VS Code
+.vscode/
+
+# IntelliJ / PyCharm / CLion
+.idea/
+
+# Mac OS
+.DS_Store
+
+# Windows
+Thumbs.db

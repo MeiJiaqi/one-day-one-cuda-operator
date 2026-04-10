@@ -4,5 +4,13 @@
 // Day 1: Vector Add
 void vector_add_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
 
-// Day 2: GEMM (预留)
-// void gemm_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c, float alpha, float beta);
+/// Day 02
+void gemm_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
+
+void gemm_v2_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
+
+void gemm_v3_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
+
+void gemm_v4_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
+
+void gemm_v5_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
