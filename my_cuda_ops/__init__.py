@@ -85,3 +85,61 @@ def matmul_v5(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     c = torch.empty((M, N), device=a.device, dtype=a.dtype)
     _C.gemm_v5(a, b, c)
     return c
+
+def reduce_sum(a: torch.Tensor) -> torch.Tensor:
+    """
+    高性能 CUDA 并行归约求和 (Warp Shuffle 版)
+    
+    Args:
+        a (torch.Tensor): 输入张量 (将被展平为 1D)
+    Returns:
+        torch.Tensor: 包含单个求和结果的 0 维张量 (标量)
+    """
+    assert a.is_cuda, "Input must be on CUDA"
+    assert a.dtype == torch.float32, "Input must be float32"
+    a = a.contiguous()
+    
+    # 展平为 1D，求和操作不关心原有的形状
+    current_input = a.view(-1)
+    
+    # 多级归约：如果元素个数大于 1，就继续缩小
+    while current_input.numel() > 1:
+        n = current_input.numel()
+        threads = 1024
+        # 计算当前轮次需要多少个 Block
+        blocks = (n + threads - 1) // threads
+        
+        # 分配当前轮次的输出内存
+        current_output = torch.empty(blocks, device=a.device, dtype=a.dtype)
+        
+        # 调用底层的 block 级归约 (_C.reduce_sum 是你在 extension.cpp 里注册的名字)
+        _C.reduce_sum(current_input, current_output)
+        
+        # 将输出作为下一轮的输入
+        current_input = current_output
+        
+    # 返回一个标量 Tensor (去除维度)
+    return current_input.view([])
+
+def reduce_sum_v3(a: torch.Tensor) -> torch.Tensor:
+    assert a.is_cuda and a.dtype == torch.float32
+    current_input = a.contiguous().view(-1)
+    
+    # 必须要有一个 max_blocks，和 C++ 里写的保持一致
+    max_blocks = 1024 
+    
+    while current_input.numel() > 1:
+        n = current_input.numel()
+        threads = 1024
+        
+        # 【修复点】：限制分配的内存大小，最多只能是 max_blocks
+        blocks = min((n + threads - 1) // threads, max_blocks)
+        
+        # 现在分配的内存刚好装满 C++ 算出来的结果，没有一丝多余的垃圾
+        current_output = torch.empty(blocks, device=a.device, dtype=a.dtype)
+        
+        _C.reduce_sum_v3(current_input, current_output)
+        
+        current_input = current_output
+        
+    return current_input.view([])
