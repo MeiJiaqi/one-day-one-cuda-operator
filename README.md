@@ -88,16 +88,23 @@ Bandwidth : 399.45 GB/s
 
 ## 📅 算子路线图 (Roadmap)
 
+| Day | Operator | Category | Core Optimizations / Tech | Difficulty | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 01 | **Vector Add** | 逐元素 | Global Memory, Coalescing | ⭐ | ✅ |
+| 02 | **GEMM (FP32)** | 矩阵乘法 | **2D Register Tiling**, Shared Memory | ⭐⭐⭐ | ✅ |
+| 03 | **Reduce Sum** | 归约 | **Warp Shuffle**, Grid-Stride Loop | ⭐⭐ | ✅ |
+| 04 | **Softmax** | 激活/归一 | **Online Softmax**, Kernel Fusion | ⭐⭐⭐ | ✅ |
+| 05 | **LayerNorm** | 归一化 | Welford's Algorithm, Multi-pass Fusion | ⭐⭐⭐ | 🗓️ |
+| 06 | **Transpose** | 访存变换 | **Bank Conflict Fix**, Padding Magic | ⭐⭐⭐ | 🗓️ |
+| 07 | **Prefix Sum** | 扫描 | Blelloch Scan, Work-efficient Parallel | ⭐⭐⭐⭐ | 🗓️ |
+| 08 | **Conv2d** | 卷积 | **Im2Col**, Winograd (Intro) | ⭐⭐⭐⭐ | 🗓️ |
+| 09 | **Quantize** | 量化 | **W4A16**, Bit Manipulation, Dequant | ⭐⭐⭐⭐⭐ | 🗓️ |
+| 10 | **FlashAttention**| 究极融合 | **Tiling, Recomputation, Online Softmax** | ⭐⭐⭐⭐⭐ | 🗓️ |
 
-| Day | Operator       | Category     | Core Optimizations                       | Status |
-| --- | -------------- | ------------ | ---------------------------------------- | ------ |
-| 01  | **Vector Add** | Element-wise | Memory Coalescing                        | ✅      |
-| 02  | **GEMM**       | MatMul       | Shared Memory, Tiling, Bank Conflict Fix | ✅      |
-| 03  | **Reduce Sum** | Reduction    | Tree Reduction, Warp Shuffle             | ✅      |
-| 04  | **Softmax**    | Transformer  | Online Softmax, Register Tiling          | 🚧     |
-| 05  | **LayerNorm**  | Transformer  | Fused Kernels                            | 🗓️    |
-| 06  | **Prefix Sum** | Scan         | Blelloch Scan                            | 🗓️    |
-
+> **图例说明**:
+> * ✅ **Completed**: 已跨越的物理极限
+> * 🗓️ **Planned**: 即将发起的挑战
+> * ⭐ **Difficulty**: 硬件特性与并行逻辑的综合复杂度
 
 ## 🤝 贡献 (Contributing)
 

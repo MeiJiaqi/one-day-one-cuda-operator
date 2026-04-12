@@ -18,3 +18,5 @@ void gemm_v5_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
 void reduce_forward(torch::Tensor input, torch::Tensor output);
 
 void reduce_v3_forward(torch::Tensor input, torch::Tensor output);
+
+void softmax_forward(torch::Tensor input, torch::Tensor output);

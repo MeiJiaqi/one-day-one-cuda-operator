@@ -143,3 +143,17 @@ def reduce_sum_v3(a: torch.Tensor) -> torch.Tensor:
         current_input = current_output
         
     return current_input.view([])
+
+def softmax(a: torch.Tensor, dim: int = -1) -> torch.Tensor:
+    """
+    高性能 CUDA Softmax
+    目前仅支持在最后一维 (Row-wise) 上进行 Softmax
+    """
+    assert a.is_cuda and a.dtype == torch.float32
+    # 确保最后一维在内存中是连续的
+    a = a.contiguous()
+    
+    # 预分配输出 Tensor
+    out = torch.empty_like(a)
+    _C.softmax(a, out)
+    return out

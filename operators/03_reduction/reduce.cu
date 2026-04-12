@@ -25,13 +25,6 @@ __global__ void reduce_v1_shared_mem(const float* input, float* output, int n) {
 }
 
 // v2: 基于 Warp Shuffle 的极致优化版
-// 不需要 __syncthreads()，因为 Warp 内天然同步
-__device__ float warpReduceSum(float val) {
-    for (int offset = 16; offset > 0; offset /= 2) {
-        val += __shfl_down_sync(0xffffffff, val, offset);
-    }
-    return val;
-}
 
 __global__ void reduce_v2_warp_shuffle(const float* input, float* output, int n) {
     __shared__ float warp_sums[32]; // 最多支持 1024 线程 (32 warps)
