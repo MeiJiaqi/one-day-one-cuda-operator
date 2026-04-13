@@ -157,3 +157,24 @@ def softmax(a: torch.Tensor, dim: int = -1) -> torch.Tensor:
     out = torch.empty_like(a)
     _C.softmax(a, out)
     return out
+
+def layernorm(a: torch.Tensor, gamma: torch.Tensor, beta: torch.Tensor, eps: float = 1e-5) -> torch.Tensor:
+    """
+    高性能 CUDA LayerNorm (基于 Welford 算法的一趟扫描)
+    默认在最后一个维度 (Hidden Size) 上进行归一化
+    """
+    assert a.is_cuda and gamma.is_cuda and beta.is_cuda, "All inputs must be on CUDA"
+    assert a.dtype == torch.float32, "Input must be float32"
+    
+    # 确保张量在内存中是连续的
+    a = a.contiguous()
+    gamma = gamma.contiguous()
+    beta = beta.contiguous()
+    
+    # 预分配输出内存
+    out = torch.empty_like(a)
+    
+    # 调用底层 C++ 算子
+    _C.layernorm(a, gamma, beta, out, eps)
+    
+    return out

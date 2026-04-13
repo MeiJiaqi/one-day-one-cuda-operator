@@ -20,3 +20,5 @@ void reduce_forward(torch::Tensor input, torch::Tensor output);
 void reduce_v3_forward(torch::Tensor input, torch::Tensor output);
 
 void softmax_forward(torch::Tensor input, torch::Tensor output);
+
+void layernorm_forward(torch::Tensor input, torch::Tensor gamma, torch::Tensor beta, torch::Tensor output, float eps);
