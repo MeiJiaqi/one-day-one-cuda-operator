@@ -94,7 +94,7 @@ Bandwidth : 399.45 GB/s
 | 02 | **GEMM (FP32)** | 矩阵乘法 | **2D Register Tiling**, Shared Memory | ⭐⭐⭐ | ✅ |
 | 03 | **Reduce Sum** | 归约 | **Warp Shuffle**, Grid-Stride Loop | ⭐⭐ | ✅ |
 | 04 | **Softmax** | 激活/归一 | **Online Softmax**, Kernel Fusion | ⭐⭐⭐ | ✅ |
-| 05 | **LayerNorm** | 归一化 | Welford's Algorithm, Multi-pass Fusion | ⭐⭐⭐ | 🗓️ |
+| 05 | **LayerNorm** | 归一化 | Welford's Algorithm, Multi-pass Fusion | ⭐⭐⭐ | ✅ |
 | 06 | **Transpose** | 访存变换 | **Bank Conflict Fix**, Padding Magic | ⭐⭐⭐ | 🗓️ |
 | 07 | **Prefix Sum** | 扫描 | Blelloch Scan, Work-efficient Parallel | ⭐⭐⭐⭐ | 🗓️ |
 | 08 | **Conv2d** | 卷积 | **Im2Col**, Winograd (Intro) | ⭐⭐⭐⭐ | 🗓️ |
