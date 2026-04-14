@@ -11,4 +11,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("reduce_sum_v3", &reduce_v3_forward, "Reduce V3 (CUDA)");
     m.def("softmax", &softmax_forward, "Softmax (CUDA)");
     m.def("layernorm", &layernorm_forward, "LayerNorm Forward (CUDA)");
+    m.def("transpose", &transpose_forward, "Matrix Transpose (CUDA)");
 }

@@ -178,3 +178,17 @@ def layernorm(a: torch.Tensor, gamma: torch.Tensor, beta: torch.Tensor, eps: flo
     _C.layernorm(a, gamma, beta, out, eps)
     
     return out
+
+def transpose(a: torch.Tensor) -> torch.Tensor:
+    """
+    高性能 CUDA 矩阵转置 (针对最后两个维度)
+    """
+    assert a.is_cuda and a.dtype == torch.float32, "Input must be float32 on CUDA"
+    assert a.dim() == 2, "Only 2D transpose is supported in this benchmark"
+    
+    a = a.contiguous()
+    # 预分配输出内存，注意形状是转置的
+    out = torch.empty((a.size(1), a.size(0)), device=a.device, dtype=a.dtype)
+    
+    _C.transpose(a, out)
+    return out
