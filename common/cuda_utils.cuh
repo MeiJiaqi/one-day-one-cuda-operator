@@ -5,6 +5,20 @@
 #include <cmath>
 #include <cfloat>
 
+// 捕获 CUDA 错误的宏
+#define CUDA_CHECK(call)                                                    \
+    do {                                                                    \
+        cudaError_t err = call;                                             \
+        if (err != cudaSuccess) {                                           \
+            printf("CUDA Error:\n");                                        \
+            printf("    File:       %s\n", __FILE__);                       \
+            printf("    Line:       %d\n", __LINE__);                       \
+            printf("    Error code: %d\n", err);                            \
+            printf("    Error text: %s\n", cudaGetErrorString(err));       \
+            exit(1);                                                        \
+        }                                                                   \
+    } while (0)
+
 // ==========================================================
 // 归约底层原语 (Reduction Primitives)
 // ==========================================================
@@ -51,19 +65,7 @@ __inline__ __device__ float blockReduceSum(float val) {
     return val;
 }
 
-// 捕获 CUDA 错误的宏
-#define CUDA_CHECK(call)                                                    \
-    do {                                                                    \
-        cudaError_t err = call;                                             \
-        if (err != cudaSuccess) {                                           \
-            printf("CUDA Error:\n");                                        \
-            printf("    File:       %s\n", __FILE__);                       \
-            printf("    Line:       %d\n", __LINE__);                       \
-            printf("    Error code: %d\n", err);                            \
-            printf("    Error text: %s\n", cudaGetErrorString(err));       \
-            exit(1);                                                        \
-        }                                                                   \
-    } while (0)
+
 
 // ==========================================================
 // Welford 并行算法底层原语 (LayerNorm 专属)

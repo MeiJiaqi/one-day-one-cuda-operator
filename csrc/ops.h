@@ -24,3 +24,5 @@ void softmax_forward(torch::Tensor input, torch::Tensor output);
 void layernorm_forward(torch::Tensor input, torch::Tensor gamma, torch::Tensor beta, torch::Tensor output, float eps);
 
 void transpose_forward(torch::Tensor input, torch::Tensor output);
+
+void wmma_gemm_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);

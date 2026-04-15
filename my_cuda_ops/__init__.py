@@ -192,3 +192,21 @@ def transpose(a: torch.Tensor) -> torch.Tensor:
     
     _C.transpose(a, out)
     return out
+
+def wmma_gemm(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """
+    Tensor Core 加速的 GEMM (FP16 输入 -> FP32 累加输出)
+    要求矩阵维度必须是 16 的整数倍
+    """
+    assert a.is_cuda and b.is_cuda
+    assert a.dtype == torch.float16 and b.dtype == torch.float16, "Inputs must be FP16"
+    assert a.size(1) == b.size(0)
+    
+    a = a.contiguous()
+    b = b.contiguous()
+    
+    # 预分配 FP32 的输出
+    out = torch.empty((a.size(0), b.size(1)), device=a.device, dtype=torch.float32)
+    
+    _C.wmma_gemm(a, b, out)
+    return out

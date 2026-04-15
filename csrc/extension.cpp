@@ -12,4 +12,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("softmax", &softmax_forward, "Softmax (CUDA)");
     m.def("layernorm", &layernorm_forward, "LayerNorm Forward (CUDA)");
     m.def("transpose", &transpose_forward, "Matrix Transpose (CUDA)");
+    m.def("wmma_gemm", &wmma_gemm_forward, "Tensor Core GEMM (WMMA)");
 }
