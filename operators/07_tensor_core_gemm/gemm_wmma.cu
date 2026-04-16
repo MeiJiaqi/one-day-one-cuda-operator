@@ -70,7 +70,7 @@ __global__ void wmma_gemm_shared_kernel(const half* a, const half* b, float* c, 
 
     // Warp 的局部索引
     int warp_id = threadIdx.x / 32;     // 0 ~ 3 (因为我们分配了 128 个线程)
-    int lane_id = threadIdx.x % 32;     // 0 ~ 31
+    // int lane_id = threadIdx.x % 32;     // 0 ~ 31
 
     // 确定当前 Warp 负责计算 C 矩阵中的哪一块 (32x32 的区域)
     // 4 个 Warp 刚好分摊 64x64 的 M_TILE x N_TILE 区域

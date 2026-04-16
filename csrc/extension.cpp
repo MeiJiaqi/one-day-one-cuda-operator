@@ -13,4 +13,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("layernorm", &layernorm_forward, "LayerNorm Forward (CUDA)");
     m.def("transpose", &transpose_forward, "Matrix Transpose (CUDA)");
     m.def("wmma_gemm", &wmma_gemm_forward, "Tensor Core GEMM (WMMA)");
+    m.def("prefix_sum", &prefix_sum_forward, "Prefix Sum (Scan)");
 }

@@ -210,3 +210,17 @@ def wmma_gemm(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     
     _C.wmma_gemm(a, b, out)
     return out
+
+def prefix_sum(a: torch.Tensor) -> torch.Tensor:
+    """
+    高性能 CUDA 前缀和 (Inclusive Scan)
+    V1 版本目前仅支持 N <= 2048 且为 2 的幂次的一维张量
+    """
+    assert a.is_cuda and a.dtype == torch.float32
+    assert a.dim() == 1, "V1 仅支持 1D Tensor"
+    
+    a = a.contiguous()
+    out = torch.empty_like(a)
+    
+    _C.prefix_sum(a, out)
+    return out
