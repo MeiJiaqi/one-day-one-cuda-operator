@@ -104,21 +104,86 @@ __global__ void gemm_shared_kernel(const float* A, const float* B, float* C, int
         C[row * N + col] = value;
     }
 }
+#define TILE_SIZE 32
 
-// 供 C++ 调用的 v2 接口
-void gemm_v2_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
+__global__ void gemm_shared_mem_kernel(const float* A,const float* B,float* C,int M,int N,int K)
+{
+    __shared__ float s_a[TILE_SIZE][TILE_SIZE];
+    __shared__ float s_b[TILE_SIZE][TILE_SIZE];
+
+    int row = blockDim.y*blockIdx.y+threadIdx.y;
+    int col = blockDim.x*blockIdx.x+threadIdx.x;
+
+    int tx=threadIdx.x;
+    int ty=threadIdx.y;
+
+    double value=0.0f;
+
+    int numsTile=(K+TILE_SIZE-1)/TILE_SIZE;
+
+    for(int t=0;t<numsTile;t++){
+
+        int tile_k_a = t*TILE_SIZE+tx;
+        int tile_k_b = t*TILE_SIZE+ty;
+        
+        if(row<M&&tile_k_a<K){
+            s_a[ty][tx]=A[row*K+tile_k_a];
+        }else{
+            s_a[ty][tx]=0.0f;
+        }
+
+        if(col<N&&tile_k_b<K){
+            s_b[ty][tx]=B[tile_k_b*N+col];
+        }else{
+            s_b[ty][tx]=0.0f;
+        }
+
+        __syncthreads();
+        #pragma unroll
+        for(int i=0;i<TILE_SIZE;++i){
+            value+=s_a[ty][i]*s_b[i][tx];
+        }
+
+        __syncthreads();
+    }
+
+    if(row<M&&col<N){
+        C[row*N+col]=value;
+    }
+
+    
+}
+
+// // 供 C++ 调用的 v2 接口
+// void gemm_v2_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
+//     int M = a.size(0);
+//     int K = a.size(1);
+//     int N = b.size(1);
+
+//     dim3 blockDim(TILE_SIZE, TILE_SIZE);
+//     dim3 gridDim((N + TILE_SIZE - 1) / TILE_SIZE, (M + TILE_SIZE - 1) / TILE_SIZE);
+    
+//     gemm_shared_kernel<<<gridDim, blockDim>>>(
+//         a.data_ptr<float>(), 
+//         b.data_ptr<float>(), 
+//         c.data_ptr<float>(), 
+//         M, N, K
+//     );
+//     CUDA_CHECK(cudaGetLastError());
+// }
+
+void gemm_v2_forward(torch::Tensor a,torch::Tensor b,torch::Tensor c){
     int M = a.size(0);
     int K = a.size(1);
-    int N = b.size(1);
+    int N = b.size(0);
+    dim3 blockDim(TILE_SIZE,TILE_SIZE);
+    dim3 gridDim((N+TILE_SIZE-1)/TILE_SIZE,(M+TILE_SIZE-1)/TILE_SIZE);
 
-    dim3 blockDim(TILE_SIZE, TILE_SIZE);
-    dim3 gridDim((N + TILE_SIZE - 1) / TILE_SIZE, (M + TILE_SIZE - 1) / TILE_SIZE);
-    
-    gemm_shared_kernel<<<gridDim, blockDim>>>(
-        a.data_ptr<float>(), 
-        b.data_ptr<float>(), 
-        c.data_ptr<float>(), 
-        M, N, K
+    gemm_shared_mem_kernel<<<gridDim,blockDim>>>(
+        a.data_ptr<float>(),
+        b.data_ptr<float>(),
+        c.data_ptr<float>(),
+        M,N,K
     );
     CUDA_CHECK(cudaGetLastError());
 }

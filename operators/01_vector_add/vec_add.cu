@@ -1,5 +1,5 @@
 #include "../../csrc/ops.h"
-#include "../../common/cuda_utils.cuh" // 如果你有错误检查宏的话
+#include "../../common/cuda_utils.cuh"
 
 __global__ void vecAddKernel(const float* A, const float* B, float* C, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;

@@ -14,4 +14,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("transpose", &transpose_forward, "Matrix Transpose (CUDA)");
     m.def("wmma_gemm", &wmma_gemm_forward, "Tensor Core GEMM (WMMA)");
     m.def("prefix_sum", &prefix_sum_forward, "Prefix Sum (Scan)");
+    m.def("conv2d", &conv2d_forward, "Naive 2D Convolution");
+    m.def("conv2d_im2col", &conv2d_im2col_forward, "混合 Im2Col 与 cuBLAS/PyTorch GEMM");
+    
 }

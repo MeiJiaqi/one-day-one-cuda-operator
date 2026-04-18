@@ -28,3 +28,7 @@ void transpose_forward(torch::Tensor input, torch::Tensor output);
 void wmma_gemm_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
 
 void prefix_sum_forward(torch::Tensor input, torch::Tensor output);
+
+void conv2d_forward(torch::Tensor X, torch::Tensor Weight, torch::Tensor Y);
+
+void conv2d_im2col_forward(torch::Tensor X, torch::Tensor Weight, torch::Tensor Y);

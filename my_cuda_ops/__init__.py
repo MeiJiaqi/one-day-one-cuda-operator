@@ -1,5 +1,5 @@
 import torch
-
+import torch.nn.functional as F
 # 导入编译好的底层 C++ 动态链接库
 from . import _C 
 
@@ -224,3 +224,55 @@ def prefix_sum(a: torch.Tensor) -> torch.Tensor:
     
     _C.prefix_sum(a, out)
     return out
+
+def conv2d(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
+    """
+    基础版 Conv2d (Stride=1, Padding=0)
+    x: [N, C, H, W]
+    weight: [K, C, R, S]
+    """
+    assert x.is_cuda and weight.is_cuda
+    assert x.dtype == torch.float32 and weight.dtype == torch.float32
+    assert x.dim() == 4 and weight.dim() == 4
+    assert x.size(1) == weight.size(1), "In_channels 必须匹配"
+    
+    N, C, H, W = x.size()
+    K_out, _, R, S = weight.size()
+    
+    H_out = H - R + 1
+    W_out = W - S + 1
+    
+    x = x.contiguous()
+    weight = weight.contiguous()
+    
+    out = torch.empty((N, K_out, H_out, W_out), device=x.device, dtype=torch.float32)
+    
+    _C.conv2d(x, weight, out)
+    return out
+
+def conv2d_im2col(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
+    """
+    V2 版本：利用 Im2Col 展开，再借助高度优化的 GEMM 完成卷积
+    """
+    N, C, H, W = x.size()
+    K_out, _, R, S = weight.size()
+    
+    H_out = H - R + 1
+    W_out = W - S + 1
+    
+    # 1. 申请 Im2Col 的庞大中间内存矩阵 [N * H_out * W_out, C * R * S]
+    X_col = torch.empty((N * H_out * W_out, C * R * S), device=x.device, dtype=torch.float32)
+    
+    # 2. 调用我们写的 CUDA Kernel 进行内存展开
+    _C.conv2d_im2col(x.contiguous(), weight.contiguous(), X_col)
+    
+    # 3. 权重展平 [K, C*R*S] -> 转置为 [C*R*S, K]
+    W_mat = weight.view(K_out, -1).t()
+    
+    # 4. 终极爆发：矩阵乘法 [N*H_out*W_out, K]
+    Y_col = torch.matmul(X_col, W_mat)
+    
+    # 5. 将二维结果重新 View 回四维图像形状，并调整内存布局
+    Y = Y_col.view(N, H_out, W_out, K_out).permute(0, 3, 1, 2).contiguous()
+    
+    return Y

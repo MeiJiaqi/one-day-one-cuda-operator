@@ -46,6 +46,7 @@ compile_commands.json
 # ==========================================
 # Nsight Compute & Profiling (性能分析文件)
 # ==========================================
+profiles/
 *.ncu-rep
 *.nsys-rep
 *.sqlite
