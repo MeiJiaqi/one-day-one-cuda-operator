@@ -16,5 +16,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("prefix_sum", &prefix_sum_forward, "Prefix Sum (Scan)");
     m.def("conv2d", &conv2d_forward, "Naive 2D Convolution");
     m.def("conv2d_im2col", &conv2d_im2col_forward, "混合 Im2Col 与 cuBLAS/PyTorch GEMM");
+    m.def("flash_decoding", &flash_decoding_forward, "Flash Decoding V1");
+    m.def("w4a16_gemv", &w4a16_gemv_forward, "W4A16 Quantized GEMV");
     
 }

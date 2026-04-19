@@ -276,3 +276,39 @@ def conv2d_im2col(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
     Y = Y_col.view(N, H_out, W_out, K_out).permute(0, 3, 1, 2).contiguous()
     
     return Y
+
+def flash_decoding(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
+    """
+    q: [B, H, d]
+    k: [B, H, N, d]
+    v: [B, H, N, d]
+    """
+    assert q.is_cuda and q.dtype == torch.float32
+    assert q.size(-1) <= 1024, "Head dim 太大超过 Block 线程上限"
+    
+    B, H, d = q.size()
+    _, _, N, _ = k.size()
+    
+    q = q.contiguous()
+    k = k.contiguous()
+    v = v.contiguous()
+    
+    out = torch.empty((B, H, d), device=q.device, dtype=torch.float32)
+    _C.flash_decoding(q, k, v, out)
+    return out
+
+def w4a16_gemv(x: torch.Tensor, w_packed: torch.Tensor, scales: torch.Tensor) -> torch.Tensor:
+    """
+    x: [K] float16
+    w_packed: [N, K // 2] uint8 (物理存储只有一半)
+    scales: [N] float16
+    """
+    assert x.dtype == torch.float16
+    assert w_packed.dtype == torch.uint8
+    assert scales.dtype == torch.float16
+    
+    N = scales.size(0)
+    out = torch.empty((N,), device=x.device, dtype=torch.float32)
+    
+    _C.w4a16_gemv(x, w_packed, scales, out)
+    return out
