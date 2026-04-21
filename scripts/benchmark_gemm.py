@@ -31,7 +31,7 @@ def run_gemm_benchmark():
         B = torch.randn((K, N), device='cuda', dtype=torch.float32)
 
         # 1. 验证正确性
-        C_custom = my_cuda_ops.matmul_v2(A, B)
+        C_custom = my_cuda_ops.matmul_v3_my(A, B)
         C_ref = torch.matmul(A, B)
         
         # 矩阵乘法会有浮点累加误差，容差(atol)设为 1e-3
@@ -41,7 +41,7 @@ def run_gemm_benchmark():
         # 2. 评测耗时
         pytorch_time = benchmark_function(lambda: torch.matmul(A, B))
         nvtx.range_push("My_CUDA_gemm")
-        my_cuda_time = benchmark_function(lambda: my_cuda_ops.matmul_v2(A, B))
+        my_cuda_time = benchmark_function(lambda: my_cuda_ops.matmul_v3_my(A, B))
 
         # 3. 计算 TFLOPS (Tera Floating Point Operations Per Second)
         # GEMM 计算量为: 2 * M * N * K 次浮点运算

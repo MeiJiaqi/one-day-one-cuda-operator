@@ -266,6 +266,7 @@ __global__ void gemm_v3_register_tiling_kernel(const float* A, const float* B, f
     }
 }
 
+
 void gemm_v3_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
     int M = a.size(0);
     int K = a.size(1);
@@ -281,10 +282,168 @@ void gemm_v3_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
     CUDA_CHECK(cudaGetLastError());
 }
 
+
+// __global__ void gemm_v3_register_tiling_my_kernel(const float* A,const float* B,float* C,int M,int N,int K)
+// {
+//     __shared__ float s_a[TILE_SIZE][TILE_SIZE];
+//     __shared__ float s_b[TILE_SIZE][TILE_SIZE];
+
+//     int row = blockIdx.y*TILE_SIZE+threadIdx.y;
+//     int col = blockIdx.x*TILE_SIZE+threadIdx.x*THREAD_WORK_X;
+
+//     int ty=threadIdx.y;
+//     int tx=threadIdx.x;
+
+//     float c_reg[THREAD_WORK_X] ={0.0f};
+
+//     int numTiles = (K+TILE_SIZE-1)/TILE_SIZE;
+
+//     for(int t=0;t<numTiles;++t)
+//     {
+//         #pragma unroll
+//         for(int i=0;i<THREAD_WORK_X;++i)
+//         {
+//             int tid=ty*(TILE_SIZE/THREAD_WORK_X)+tx;
+//             int total_idx = tid+i*256;
+//             int row_in_tile = total_idx/TILE_SIZE;
+//             int col_in_tile = total_idx%TILE_SIZE;
+
+//              // 搬运 A
+//              int global_a_row = blockIdx.y * TILE_SIZE + row_in_tile;
+//              int global_a_col = t * TILE_SIZE + col_in_tile;
+//              if(global_a_row<M&&global_a_col<K){
+//                 s_a[row_in_tile][col_in_tile]=A[global_a_row*K+global_a_col];
+//              }else{
+//                 s_a[row_in_tile][col_in_tile]=0.0f;
+//              }
+
+//              // 搬运 B
+//              int global_b_col = blockIdx.x * TILE_SIZE + col_in_tile;
+//              int global_b_row = t * TILE_SIZE + row_in_tile;
+
+//              if(global_b_row<K&&global_b_col<N)
+//                 s_b[row_in_tile][col_in_tile]=B[global_b_row*N+global_b_col];
+//              else
+//                 s_b[row_in_tile][col_in_tile]=0.0f;      
+//         }
+//         __syncthreads();
+//         // 2. 寄存器分块核心计算！
+//         #pragma unroll
+//         for(int k=0;k<TILE_SIZE;++k)
+//         {
+//             float a_reg =s_a[ty][k];
+//             #pragma unroll
+//             for(int i=0;i<THREAD_WORK_X;++i){
+//                 c_reg[i]+=a_reg*s_b[k][tx*THREAD_WORK_X+i];
+//             }
+//         }
+//         __syncthreads();
+//     }
+//     // 3. 将寄存器中的 4 个结果写回 Global Memory
+//     if(row<M){
+//         #pragma unroll
+//         for(int i=0;i<THREAD_WORK_X;++i){
+//             int current_col=col+i;
+//             if(current_col<N){
+//                 C[row*N+current_col]=c_reg[i];
+//             }
+//         }
+//     }
+// }
+
+#define TILE_SIZE 32
+#define THREAD_WORK_X 4
+
+__global__ void gemm_v3_register_tiling_my_kernel(const float* A, const float* B, float* C, int M, int N, int K) {
+    __shared__ float s_a[TILE_SIZE][TILE_SIZE];
+    __shared__ float s_b[TILE_SIZE][TILE_SIZE];
+
+    int ty = threadIdx.y; // 0~31
+    int tx = threadIdx.x; // 0~7
+    
+    // 当前线程负责计算的 C 矩阵起始坐标
+    int row = blockIdx.y * TILE_SIZE + ty;
+    int col = blockIdx.x * TILE_SIZE + tx * THREAD_WORK_X;
+
+    float c_reg[THREAD_WORK_X] = {0.0f};
+
+    int numTiles = (K + TILE_SIZE - 1) / TILE_SIZE;
+
+    for (int t = 0; t < numTiles; ++t) {
+        // --- 1. 完美的合并访问搬运 ---
+        #pragma unroll
+        for (int i = 0; i < THREAD_WORK_X; ++i) {
+            int tid = ty * (TILE_SIZE / THREAD_WORK_X) + tx; // 0~255
+            int total_idx = tid + i * 256;                   // 每次循环步进 256
+            int row_in_tile = total_idx / TILE_SIZE;
+            int col_in_tile = total_idx % TILE_SIZE;
+
+            // 搬运 A (注意：row_in_tile 对应全局的 row 方向，col_in_tile 对应 K 方向)
+            int global_a_row = blockIdx.y * TILE_SIZE + row_in_tile;
+            int global_a_col = t * TILE_SIZE + col_in_tile;
+            if (global_a_row < M && global_a_col < K)
+                s_a[row_in_tile][col_in_tile] = A[global_a_row * K + global_a_col];
+            else
+                s_a[row_in_tile][col_in_tile] = 0.0f;
+
+            // 搬运 B 矩阵
+            int global_b_row = t * TILE_SIZE + row_in_tile;    // row_in_tile 对应 K 维度
+            int global_b_col = blockIdx.x * TILE_SIZE + col_in_tile; // col_in_tile 对应 N 维度
+
+            if (global_b_row < K && global_b_col < N) {
+                s_b[row_in_tile][col_in_tile] = B[global_b_row * N + global_b_col];
+            } else {
+                s_b[row_in_tile][col_in_tile] = 0.0f; // 必须填0，否则边缘计算会炸
+            }
+        }
+        
+        // 必须同步：确保 Shared Memory 全部填满
+        __syncthreads();
+
+        // --- 2. 寄存器分块计算 ---
+        #pragma unroll
+        for (int k = 0; k < TILE_SIZE; ++k) {
+            float a_reg = s_a[ty][k]; // 广播 A 元素到寄存器
+            #pragma unroll
+            for (int i = 0; i < THREAD_WORK_X; ++i) {
+                c_reg[i] += a_reg * s_b[k][tx * THREAD_WORK_X + i];
+            }
+        }
+        
+        // 必须同步：确保计算完成，才能进入下一轮 Tile 覆盖 Shared Memory
+        __syncthreads();
+    }
+
+    // --- 3. 写回 Global Memory ---
+    if (row < M) {
+        #pragma unroll
+        for (int i = 0; i < THREAD_WORK_X; ++i) {
+            int current_col = col + i;
+            if (current_col < N) {
+                C[row * N + current_col] = c_reg[i];
+            }
+        }
+    }
+}
+void gemm_v3_my_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c) {
+
+    int M=a.size(0);
+    int K=a.size(1);
+    int N=b.size(1);
+
+    dim3 blockDim(TILE_SIZE / THREAD_WORK_X, TILE_SIZE);
+    dim3 gridDim((N + TILE_SIZE - 1) / TILE_SIZE, (M + TILE_SIZE - 1) / TILE_SIZE);
+
+    gemm_v3_register_tiling_my_kernel<<<gridDim,blockDim>>>(
+        a.data_ptr<float>(),b.data_ptr<float>(),c.data_ptr<float>(),M,N,K
+    );
+    CUDA_CHECK(cudaGetLastError());
+}
+
 // ---------------- Day 2 绝对死磕: 2D Register Tiling ----------------
 // 定义工业级经典分块参数
 #define BM 128  // Block 在 M 维度的跨度
-#define BN 128  // Block 在 N 维度的跨度
+#define BN 128  // Blo}ck 在 N 维度的跨度
 #define BK 8    // Block 在 K 维度的跨度 (K维度不用太大，避免 Shared Memory 撑爆)
 #define TM 8    // 每个线程在 M 维度计算 8 个元素
 #define TN 8    // 每个线程在 N 维度计算 8 个元素

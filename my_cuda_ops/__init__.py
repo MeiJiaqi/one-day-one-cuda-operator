@@ -66,6 +66,17 @@ def matmul_v3(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     _C.gemm_v3(a, b, c)
     return c
 
+def matmul_v3_my(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    assert a.is_cuda and b.is_cuda
+    a = a.contiguous()
+    b = b.contiguous()
+    M, K = a.shape
+    _, N = b.shape
+    c = torch.empty((M, N), device=a.device, dtype=a.dtype)
+    _C.gemm_v3_my(a, b, c)
+    return c
+
+
 def matmul_v4(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     assert a.is_cuda and b.is_cuda
     a = a.contiguous()

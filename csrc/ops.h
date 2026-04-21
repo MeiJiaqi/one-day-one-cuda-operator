@@ -11,6 +11,8 @@ void gemm_v2_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
 
 void gemm_v3_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
 
+void gemm_v3_my_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
+
 void gemm_v4_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);
 
 void gemm_v5_forward(torch::Tensor a, torch::Tensor b, torch::Tensor c);

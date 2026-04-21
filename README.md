@@ -55,6 +55,8 @@ cd one-day-one-cuda-operator
 
 # 编译并以开发者模式安装
 pip install -e .
+
+MAX_JOBS=4 python setup.py build_ext --inplace
 ```
 
 ### 3. 运行基准测试
